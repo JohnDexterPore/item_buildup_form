@@ -11,7 +11,7 @@ function Navbar({ locationName, user }) {
             {user?.name || "Loading..."}
           </span>
           <img
-            src={user.img || Placeholder}
+            src={user?.img || Placeholder}
             alt="User Image"
             className="w-10 h-10 rounded-full"
           />
