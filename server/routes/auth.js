@@ -42,6 +42,9 @@ router.post("/login", async (req, res) => {
       role: user.role,
       name: user.first_name + " " + user.last_name,
       accountType: user.account_type,
+      jobTitle: user.job_title,
+      department: user.department,
+      email: user.email,
     };
 
     const accessToken = generateAccessToken(userPayload);
@@ -74,6 +77,9 @@ router.get("/refresh", (req, res) => {
       role: user.role,
       name: user.name,
       accountType: user.accountType,
+      jobTitle: user.jobTitle,
+      department: user.department,
+      email: user.email,
     });
     res.json({ accessToken });
   });
