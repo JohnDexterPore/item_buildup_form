@@ -16,10 +16,14 @@ function Sidebar({ collapsed, setCollapsed, navigationItems = [], loading }) {
             collapsed ? "justify-center" : ""
           }`}
         >
-          {!collapsed && <span className="text-xl font-bold">IBU Form</span>}
+          {!collapsed && (
+            <span className="text-xl font-bold overflow-hidden text-nowrap text-ellipsis">
+              IBU Form
+            </span>
+          )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-white focus:outline-none"
+            className="text-white focus:outline-none w-10 h-10 flex items-center justify-center hover:bg-gray-700 rounded-2xl"
           >
             <LuLayoutDashboard />
           </button>
