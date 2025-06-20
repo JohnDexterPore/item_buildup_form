@@ -1,12 +1,11 @@
 const express = require("express");
 const sql = require("mssql");
-const bcrypt = require("bcrypt");
 const sqlConfig = require("../db/sqlConfig");
 const authenticateToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.get("/getNavigation/:userType", authenticateToken, async (req, res) => {
+router.get("/get-navigation/:userType", authenticateToken, async (req, res) => {
   const { userType } = req.params;
   let condition = "";
 

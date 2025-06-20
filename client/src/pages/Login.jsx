@@ -28,7 +28,7 @@ function Login() {
       }
     }
     axios
-      .get("/companies/getCompanies")
+      .get("/companies/get-companies")
       .then((res) => setFetchCompanies(res.data))
       .catch((err) => console.log(err));
   }, []);

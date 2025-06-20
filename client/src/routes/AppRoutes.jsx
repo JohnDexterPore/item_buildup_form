@@ -43,8 +43,8 @@ function AppRoutes() {
         // Fetch data
         const fetchData = async () => {
           const [companiesRes, navRes] = await Promise.all([
-            axios.get("/companies/getCompanies"),
-            axios.get(`/navigation/getNavigation/${decoded.accountType}`),
+            axios.get("/companies/get-companies"),
+            axios.get(`/navigation/get-navigation/${decoded.accountType}`),
           ]);
           setNavigationItems(navRes.data);
         };
@@ -88,6 +88,7 @@ function AppRoutes() {
         setCollapsed={setCollapsed}
         navigationItems={navigationItems}
         loading={loading}
+        locationName={locationName}
       />
       <div className="flex flex-col flex-1">
         <Navbar locationName={locationName} user={user} />

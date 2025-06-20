@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/auth");
 const companiesRoutes = require("./routes/companies");
 const navigationRoutes = require("./routes/navigation");
+const usersRoutes = require("./routes/users");
 require("dotenv").config();
 
 const app = express();

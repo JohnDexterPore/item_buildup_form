@@ -9,7 +9,7 @@ const router = express.Router();
 let refreshTokens = [];
 
 const generateAccessToken = (user) =>
-  jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "2m" });
+  jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
 
 const generateRefreshToken = (user) => {
   const token = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, {

@@ -3,7 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { LuLayoutDashboard, LuLogOut } from "react-icons/lu";
 import * as LuIcons from "react-icons/lu";
 
-function Sidebar({ collapsed, setCollapsed, navigationItems = [], loading }) {
+function Sidebar({
+  collapsed,
+  setCollapsed,
+  navigationItems = [],
+  loading,
+  locationName,
+}) {
   const navigate = useNavigate();
 
   const handleSignOut = () => {
@@ -47,9 +53,10 @@ function Sidebar({ collapsed, setCollapsed, navigationItems = [], loading }) {
                 return (
                   <li key={index}>
                     <Link
-                      className={`flex items-center space-x-3 rounded-xl px-4 py-2 hover:bg-gray-700 cursor-pointer ${
-                        collapsed ? "justify-center" : ""
-                      }`}
+                      className={`flex items-center space-x-3 rounded-xl px-4 py-2 hover:bg-gray-700 cursor-pointer h-10
+                          ${collapsed ? "justify-center" : ""}
+                          ${item.nav_name === locationName ? "bg-gray-700 font-semibold" : ""}
+                        `}
                       to={item.nav_link}
                     >
                       <span className="text-lg">{Icon && <Icon />}</span>

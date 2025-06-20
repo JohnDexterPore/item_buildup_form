@@ -1,11 +1,10 @@
 const express = require("express");
 const sql = require("mssql");
-const bcrypt = require("bcrypt");
 const sqlConfig = require("../db/sqlConfig");
 
 const router = express.Router();
 
-router.get("/getCompanies", async (req, res) => {
+router.get("/get-companies", async (req, res) => {
   try {
     const pool = await sql.connect(sqlConfig);
     const result = await pool.request().query("SELECT * FROM mtbl_companies");
