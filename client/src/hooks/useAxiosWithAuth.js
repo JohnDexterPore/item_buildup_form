@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 
 export function useAxiosWithAuth() {
   const [token, setToken] = useState(localStorage.getItem("accessToken"));
+  const location = useLocation();
 
-  // Initial token refresh on mount
+  // Initial token refresh only if not on /login or public page
   useEffect(() => {
     const refreshToken = async () => {
       try {
@@ -18,10 +20,14 @@ export function useAxiosWithAuth() {
       }
     };
 
-    refreshToken(); // ✅ always try to refresh on mount
-  }, []);
+    // ⛔ Avoid refresh on public pages
+    const isPublic = ["/"].includes(location.pathname);
+    if (!token && !isPublic) {
+      refreshToken();
+    }
+  }, [token, location.pathname]);
 
-  // Setup request interceptor only once
+  // Attach token to every request
   useEffect(() => {
     const interceptor = axiosInstance.interceptors.request.use((config) => {
       const storedToken = localStorage.getItem("accessToken");
@@ -32,7 +38,7 @@ export function useAxiosWithAuth() {
     });
 
     return () => {
-      axiosInstance.interceptors.request.eject(interceptor); // Cleanup
+      axiosInstance.interceptors.request.eject(interceptor);
     };
   }, []);
 

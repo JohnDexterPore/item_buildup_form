@@ -7,7 +7,7 @@ import Login from "../pages/Login";
 import Inbox from "../pages/Inbox";
 import Account from "../pages/Account";
 import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar"; // or Topbar if separate
+import Navbar from "../components/Navbar";
 
 function AppRoutes() {
   const [collapsed, setCollapsed] = useState(false);
@@ -21,31 +21,49 @@ function AppRoutes() {
 
   const token = localStorage.getItem("accessToken");
 
+  // Auto logout timeout handler
   useEffect(() => {
-    if (!token) {
+    let logoutTimer;
+
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUser(decoded);
+
+        const currentTime = Date.now() / 1000; // current time in seconds
+        const timeUntilExpire = (decoded.exp - currentTime) * 1000; // ms
+
+        // Set timeout to auto logout on token expiration
+        logoutTimer = setTimeout(() => {
+          console.log("Token expired, logging out...");
+          localStorage.removeItem("accessToken");
+          navigate("/");
+        }, timeUntilExpire);
+
+        // Fetch data
+        const fetchData = async () => {
+          const [companiesRes, navRes] = await Promise.all([
+            axios.get("/companies/getCompanies"),
+            axios.get(`/navigation/getNavigation/${decoded.accountType}`),
+          ]);
+          setNavigationItems(navRes.data);
+        };
+
+        fetchData();
+      } catch (err) {
+        console.error("Invalid token:", err);
+        localStorage.removeItem("accessToken");
+        navigate("/");
+      } finally {
+        setLoading(false);
+      }
+    } else {
       navigate("/");
-      return;
     }
 
-    try {
-      const decoded = jwtDecode(token);
-      setUser(decoded);
-
-      const fetchData = async () => {
-        const [companiesRes, navRes] = await Promise.all([
-          axios.get("/companies/getCompanies"),
-          axios.get(`/navigation/getNavigation/${decoded.accountType}`),
-        ]);
-        setNavigationItems(navRes.data);
-      };
-
-      fetchData();
-    } catch (err) {
-      console.error("Invalid token:", err);
-      navigate("/");
-    } finally {
-      setLoading(false);
-    }
+    return () => {
+      clearTimeout(logoutTimer);
+    };
   }, [axios, navigate, token]);
 
   const pathName = location.pathname;
@@ -63,7 +81,6 @@ function AppRoutes() {
     );
   }
 
-  // Otherwise, wrap with layout
   return (
     <div className="flex">
       <Sidebar

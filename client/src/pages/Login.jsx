@@ -41,7 +41,6 @@ function Login() {
         password: password,
       });
       localStorage.setItem("accessToken", res.data.accessToken);
-      alert("Login successful!");
       navigate("/Inbox");
     } catch (err) {
       alert("Login failed");
