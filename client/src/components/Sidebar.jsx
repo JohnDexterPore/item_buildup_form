@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { LuLayoutDashboard, LuLogOut } from "react-icons/lu";
 import * as LuIcons from "react-icons/lu";
 
@@ -46,15 +46,15 @@ function Sidebar({ collapsed, setCollapsed, navigationItems = [], loading }) {
                 const Icon = LuIcons[item.nav_svg];
                 return (
                   <li key={index}>
-                    <a
+                    <Link
                       className={`flex items-center space-x-3 rounded-xl px-4 py-2 hover:bg-gray-700 cursor-pointer ${
                         collapsed ? "justify-center" : ""
                       }`}
-                      href={item.nav_link}
+                      to={item.nav_link}
                     >
                       <span className="text-lg">{Icon && <Icon />}</span>
                       {!collapsed && <span>{item.nav_name}</span>}
-                    </a>
+                    </Link>
                   </li>
                 );
               })
