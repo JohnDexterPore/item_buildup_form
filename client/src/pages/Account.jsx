@@ -202,7 +202,6 @@ function Account({ user }) {
               <input
                 type="password"
                 value="******************"
-                readOnly
                 className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
               />
               <p className="text-xs text-gray-500 italic mt-1">
