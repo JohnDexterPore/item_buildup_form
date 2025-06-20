@@ -11,7 +11,7 @@ function Account({ user }) {
   const [email, setEmail] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [department, setDepartment] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState("*********");
   const [imagePreview, setImagePreview] = useState(null);
   const [profileImage, setProfileImage] = useState(null); // actual file
 
@@ -201,7 +201,8 @@ function Account({ user }) {
               </label>
               <input
                 type="password"
-                value="******************"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
               />
               <p className="text-xs text-gray-500 italic mt-1">
