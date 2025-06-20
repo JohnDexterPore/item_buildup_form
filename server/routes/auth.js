@@ -9,7 +9,7 @@ const router = express.Router();
 let refreshTokens = [];
 
 const generateAccessToken = (user) =>
-  jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+  jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "2m" });
 
 const generateRefreshToken = (user) => {
   const token = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, {
@@ -39,11 +39,11 @@ router.post("/login", async (req, res) => {
 
     const userPayload = {
       employee_id: user.employee_id,
-      role: user.role,
-      name: user.first_name + " " + user.last_name,
-      accountType: user.account_type,
+      firstName: user.first_name,
+      lastName: user.last_name,
       jobTitle: user.job_title,
       department: user.department,
+      accountType: user.account_type,
       email: user.email,
     };
 
@@ -74,11 +74,11 @@ router.get("/refresh", (req, res) => {
 
     const accessToken = generateAccessToken({
       employee_id: user.employee_id,
-      role: user.role,
-      name: user.name,
-      accountType: user.accountType,
+      firstName: user.firstName,
+      lastName: user.lastName,
       jobTitle: user.jobTitle,
       department: user.department,
+      accountType: user.accountType,
       email: user.email,
     });
     res.json({ accessToken });

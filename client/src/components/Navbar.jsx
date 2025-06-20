@@ -8,7 +8,7 @@ function Navbar({ locationName, user }) {
         <h1 className="text-xl font-semibold text-gray-700">{locationName}</h1>
         <div className="flex items-center space-x-3">
           <span className="text-gray-800 font-medium">
-            {user?.name || "Loading..."}
+            {user?.firstName + " " + user?.lastName || "Loading..."}
           </span>
           <img
             src={user?.img || Placeholder}

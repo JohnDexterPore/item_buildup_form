@@ -82,7 +82,7 @@ function AppRoutes() {
   }
 
   return (
-    <div className="flex">
+    <div className="flex overflow-auto h-screen">
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -94,7 +94,7 @@ function AppRoutes() {
         <div className="p-6 bg-gray-100 flex-1 overflow-y-auto">
           <Routes>
             <Route path="/inbox" element={<Inbox />} />
-            <Route path="/account" element={<Account />} />
+            <Route path="/account" element={<Account user={user} />} />
             {/* Add more routes here */}
           </Routes>
         </div>
