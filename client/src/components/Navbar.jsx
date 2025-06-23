@@ -11,9 +11,21 @@ function Navbar({ locationName, user }) {
             {user?.firstName + " " + user?.lastName || "Loading..."}
           </span>
           <img
-            src={user?.img || Placeholder}
-            alt="User Image"
+            src={
+              user?.profile_image
+                ? `${
+                    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+                  }/uploads/${user.profile_image}`
+                : Placeholder
+            }
+            alt={
+              user ? `${user.firstName} ${user.lastName} Profile` : "User Image"
+            }
             className="w-10 h-10 rounded-full"
+            onError={(e) => {
+              e.currentTarget.onerror = null; // Prevent infinite loop
+              e.currentTarget.src = Placeholder;
+            }}
           />
         </div>
       </div>

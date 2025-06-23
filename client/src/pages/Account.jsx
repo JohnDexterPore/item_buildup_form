@@ -11,7 +11,7 @@ function Account({ user }) {
   const [email, setEmail] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [department, setDepartment] = useState("");
-  const [password, setPassword] = useState("*********");
+  const [password, setPassword] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [profileImage, setProfileImage] = useState(null); // actual file
 
@@ -45,28 +45,42 @@ function Account({ user }) {
   };
 
   const handleCropSave = async () => {
-    const croppedImage = await getCroppedImg(tempImage, croppedAreaPixels);
-    setImagePreview(croppedImage);
-    setProfileImage(croppedImage);
+    const croppedFile = await getCroppedImg(tempImage, croppedAreaPixels);
+    const previewUrl = URL.createObjectURL(croppedFile);
+
+    setImagePreview(previewUrl);
+    setProfileImage(croppedFile); // ✅ this is now a File object
     setCropModal(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("firstName", firstName);
-    formData.append("lastName", lastName);
+    formData.append("employee_id", user?.employee_id); // include employee_id
+    formData.append("first_name", firstName);
+    formData.append("last_name", lastName);
     formData.append("email", email);
-    formData.append("jobTitle", jobTitle);
+    formData.append("job_title", jobTitle);
     formData.append("department", department);
-    formData.append("profileImage", profileImage);
 
-    axios.post("/api/update-profile", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    if (password && password !== "******************") {
+      formData.append("password", password);
+    }
 
-    console.log("Form submitted");
+    if (profileImage) {
+      formData.append("image", profileImage); // backend expects `image`
+    }
+
+    try {
+      const res = await axios.post("/users/update-profile", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      alert(res.data.message || "Profile updated successfully");
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to update profile");
+    }
   };
 
   return (
@@ -82,9 +96,19 @@ function Account({ user }) {
             <div className="text-center">
               <label htmlFor="upload-image" className="cursor-pointer">
                 <img
-                  src={imagePreview || Placeholder}
-                  alt="User"
+                  src={
+                    imagePreview
+                      ? imagePreview
+                      : user?.profile_image
+                      ? `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/uploads/${user.profile_image}`
+                      : Placeholder
+                  }
+                  alt={user ? `${user.firstName} ${user.lastName} Profile` : "User"}
                   className="w-40 h-40 rounded-full mx-auto mb-4 border-4 border-blue-300 hover:opacity-80 transition"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null; // Prevent infinite loop
+                    e.currentTarget.src = Placeholder;
+                  }}
                 />
                 <p className="text-sm text-gray-500">
                   Click to change profile image
@@ -114,12 +138,14 @@ function Account({ user }) {
                     </div>
                     <div className="mt-4 flex justify-end gap-2">
                       <button
+                        type="button"
                         onClick={() => setCropModal(false)}
                         className="px-4 py-2 bg-gray-400 text-white rounded"
                       >
                         Cancel
                       </button>
                       <button
+                        type="button"
                         onClick={handleCropSave}
                         className="px-4 py-2 bg-blue-600 text-white rounded"
                       >

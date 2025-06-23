@@ -1,7 +1,7 @@
-// cropImage.js
 export default function getCroppedImg(imageSrc, crop) {
   return new Promise((resolve) => {
     const image = new Image();
+    image.crossOrigin = "anonymous";
     image.src = imageSrc;
     image.onload = () => {
       const canvas = document.createElement("canvas");
@@ -22,8 +22,12 @@ export default function getCroppedImg(imageSrc, crop) {
       );
 
       canvas.toBlob((blob) => {
-        const fileUrl = URL.createObjectURL(blob);
-        resolve(fileUrl);
+        if (blob) {
+          const file = new File([blob], `profile_${Date.now()}.jpeg`, {
+            type: "image/jpeg",
+          });
+          resolve(file); // ✅ return File object
+        }
       }, "image/jpeg");
     };
   });
