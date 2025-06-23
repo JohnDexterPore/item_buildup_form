@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const sql = require("mssql");
 const bcrypt = require("bcrypt");
 const sqlConfig = require("../db/sqlConfig");
+const authenticateToken = require("../middleware/authMiddleware");
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -13,6 +14,7 @@ const {
 
 const router = express.Router();
 
+// POST /api/auth/login
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
   const { employee_id, password } = req.body;
@@ -30,6 +32,15 @@ router.post("/login", async (req, res) => {
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch)
       return res.status(401).json({ message: "Incorrect password" });
+
+    // ✅ Update user status to ACTIVE
+    await pool
+      .request()
+      .input("employee_id", sql.VarChar, employee_id)
+      .input("status", sql.VarChar, "ACTIVE")
+      .query(
+        "UPDATE mtbl_users SET status = @status WHERE employee_id = @employee_id"
+      );
 
     const userPayload = {
       employee_id: user.employee_id,
@@ -89,11 +100,36 @@ router.get("/refresh", async (req, res) => {
 });
 
 // POST /api/auth/logout
-router.post("/logout", (req, res) => {
+router.post("/logout", async (req, res) => {
   const token = req.cookies.refreshToken;
+  const { employee_id } = req.body;
+
+  // Revoke token and clear cookie
   revokeRefreshToken(token);
   res.clearCookie("refreshToken");
-  res.sendStatus(204);
+
+  if (!employee_id) {
+    return res
+      .status(400)
+      .json({ message: "employee_id is required to logout" });
+  }
+
+  try {
+    const pool = await sql.connect(sqlConfig);
+    await pool
+      .request()
+      .input("employee_id", sql.VarChar, employee_id)
+      .input("status", sql.VarChar, "OFFLINE")
+      .query(
+        "UPDATE mtbl_users SET status = @status WHERE employee_id = @employee_id"
+      );
+
+    res.sendStatus(204);
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ message: "Server error during logout" });
+  }
 });
+
 
 module.exports = router;

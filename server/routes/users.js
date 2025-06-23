@@ -130,4 +130,17 @@ router.post(
   }
 );
 
+router.get("/get-users", authenticateToken, async (req, res) => {
+  try {
+    const pool = await sql.connect(sqlConfig);
+    const result = await pool
+      .request()
+      .query("SELECT * FROM mtbl_users ORDER BY first_name");
+    res.json(result.recordset);
+  } catch (err) {
+    console.error("Error fetching companies:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

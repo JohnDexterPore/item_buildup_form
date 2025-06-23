@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { LuLayoutDashboard, LuLogOut } from "react-icons/lu";
 import * as LuIcons from "react-icons/lu";
+import { useAxiosWithAuth } from "../hooks/useAxiosWithAuth";
 
 function Sidebar({
   collapsed,
@@ -11,10 +12,25 @@ function Sidebar({
   locationName,
 }) {
   const navigate = useNavigate();
+  const axios = useAxiosWithAuth();
 
-  const handleSignOut = () => {
-    localStorage.removeItem("accessToken");
-    navigate("/"); // redirect to login page
+  const handleSignOut = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        const { employee_id } = JSON.parse(atob(token.split(".")[1]));
+
+        // Call server-side logout to clear cookie and revoke refresh token
+        await axios.post("/auth/logout", {
+          employee_id: employee_id,
+        });
+      }
+    } catch (err) {
+      console.error("Error during logout:", err);
+    } finally {
+      localStorage.removeItem("accessToken");
+      navigate("/");
+    }
   };
 
   return (
@@ -55,7 +71,11 @@ function Sidebar({
                     <Link
                       className={`flex items-center space-x-3 rounded-xl px-4 py-2 hover:bg-gray-700 cursor-pointer h-10
                           ${collapsed ? "justify-center" : ""}
-                          ${item.nav_name === locationName ? "bg-gray-700 font-semibold" : ""}
+                          ${
+                            item.nav_name === locationName
+                              ? "bg-gray-700 font-semibold"
+                              : ""
+                          }
                         `}
                       to={item.nav_link}
                     >

@@ -4,10 +4,11 @@ import { jwtDecode } from "jwt-decode";
 import { useAxiosWithAuth } from "../hooks/useAxiosWithAuth";
 
 import Login from "../pages/Login";
-import Inbox from "../pages/Inbox";
-import Account from "../pages/Account";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import Inbox from "../pages/Inbox";
+import Account from "../pages/Account";
+import Users from "../pages/Users";
 
 function AppRoutes() {
   const [collapsed, setCollapsed] = useState(false);
@@ -30,14 +31,23 @@ function AppRoutes() {
         const decoded = jwtDecode(token);
         setUser(decoded);
 
-        const currentTime = Date.now() / 1000; // current time in seconds
-        const timeUntilExpire = (decoded.exp - currentTime) * 1000; // ms
+        const currentTime = Date.now() / 1000;
+        const timeUntilExpire = (decoded.exp - currentTime) * 1000;
 
-        // Set timeout to auto logout on token expiration
-        logoutTimer = setTimeout(() => {
-          console.log("Token expired, logging out...");
-          localStorage.removeItem("accessToken");
-          navigate("/");
+        // Auto logout when token expires
+        logoutTimer = setTimeout(async () => {
+          console.log("emp id" + decoded.employee_id);
+          try {
+            await axios.post("/auth/logout", {
+              employee_id: decoded.employee_id,
+            });
+            console.log("Token expired. Marked user OFFLINE.");
+          } catch (err) {
+            console.warn("Failed to mark user offline:", err);
+          } finally {
+            localStorage.removeItem("accessToken");
+            navigate("/");
+          }
         }, timeUntilExpire);
 
         // Fetch data
@@ -96,6 +106,8 @@ function AppRoutes() {
           <Routes>
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/account" element={<Account user={user} />} />
+
+            <Route path="/users" element={<Users />} />
             {/* Add more routes here */}
           </Routes>
         </div>
