@@ -4,6 +4,10 @@ const multer = require("multer");
 const bcrypt = require("bcryptjs");
 const sqlConfig = require("../db/sqlConfig");
 const authenticateToken = require("../middleware/authMiddleware");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../utils/tokenUtils");
 
 const router = express.Router();
 
@@ -17,8 +21,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
-const now = new Date();
 
 router.post(
   "/update-profile",
@@ -61,15 +63,11 @@ router.post(
       request.input("job_title", sql.VarChar, job_title);
       request.input("department", sql.VarChar, department);
       request.input("email", sql.VarChar, email);
-      request.input("now", sql.DateTime, now);
-      if (hashedPassword) {
+      request.input("now", sql.DateTime, new Date());
+      if (hashedPassword)
         request.input("password", sql.VarChar, hashedPassword);
-      }
-      if (image) {
-        request.input("image", sql.VarChar, image);
-      }
+      if (image) request.input("image", sql.VarChar, image);
 
-      // Build query safely
       let updateQuery = `
         UPDATE mtbl_users SET
           first_name = @first_name,
@@ -80,21 +78,50 @@ router.post(
           edit_date = @now,
           edit_by = @employee_id
       `;
-
-      if (hashedPassword) {
-        updateQuery += `, password = @password`;
-      }
-      if (image) {
-        updateQuery += `, profile_image = @image`;
-      }
+      if (hashedPassword) updateQuery += `, password = @password`;
+      if (image) updateQuery += `, profile_image = @image`;
 
       updateQuery += ` WHERE employee_id = @employee_id`;
-      console.log("Update Query:", updateQuery);
       await request.query(updateQuery);
+
+      // 🔄 Query updated user details (including account_type)
+      const userResult = await pool
+        .request()
+        .input("employee_id", sql.VarChar, employee_id)
+        .query("SELECT * FROM mtbl_users WHERE employee_id = @employee_id");
+
+      const user = userResult.recordset[0];
+      if (!user) {
+        return res.status(404).json({ message: "User not found after update" });
+      }
+
+      // 🧠 Create user payload with accountType included
+      const userPayload = {
+        employee_id: user.employee_id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        profile_image: user.profile_image,
+        jobTitle: user.job_title,
+        department: user.department,
+        accountType: user.account_type,
+        email: user.email,
+      };
+
+      const accessToken = generateAccessToken(userPayload);
+      const refreshToken = generateRefreshToken(userPayload);
+
+      // 🍪 Set new refresh token in cookie
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: false, // set to true if using HTTPS
+        sameSite: "strict",
+        path: "/api/auth/refresh",
+      });
 
       return res.status(200).json({
         message: "Profile updated successfully",
-        image: image ? `/uploads/${image}` : null,
+        accessToken,
+        image: user.profile_image ? `/uploads/${user.profile_image}` : null,
       });
     } catch (err) {
       console.error("Error updating profile:", err);

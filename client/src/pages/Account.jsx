@@ -72,15 +72,19 @@ function Account({ user }) {
       formData.append("image", profileImage); // backend expects `image`
     }
 
-    try {
-      const res = await axios.post("/users/update-profile", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      alert(res.data.message || "Profile updated successfully");
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Failed to update profile");
-    }
+      try {
+        const res = await axios.post("/users/update-profile", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        alert(res.data.message || "Profile updated successfully");
+
+        if (res.data.accessToken) {
+          localStorage.setItem("accessToken", res.data.accessToken);
+        }
+      } catch (err) {
+        console.error("Upload error:", err);
+        alert("Failed to update profile");
+      }
   };
 
   return (

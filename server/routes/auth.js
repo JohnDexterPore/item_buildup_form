@@ -3,21 +3,15 @@ const jwt = require("jsonwebtoken");
 const sql = require("mssql");
 const bcrypt = require("bcrypt");
 const sqlConfig = require("../db/sqlConfig");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  revokeRefreshToken,
+  isRefreshTokenValid,
+} = require("../utils/tokenUtils");
 
 const router = express.Router();
-
-let refreshTokens = [];
-
-const generateAccessToken = (user) =>
-  jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
-
-const generateRefreshToken = (user) => {
-  const token = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: "7d",
-  });
-  refreshTokens.push(token);
-  return token;
-};
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
@@ -53,7 +47,7 @@ router.post("/login", async (req, res) => {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: false, // set to true if using HTTPS
       sameSite: "strict",
       path: "/api/auth/refresh",
     });
@@ -66,14 +60,17 @@ router.post("/login", async (req, res) => {
 });
 
 // GET /api/auth/refresh
-router.get("/refresh", (req, res) => {
+router.get("/refresh", async (req, res) => {
   const token = req.cookies.refreshToken;
-  if (!token || !refreshTokens.includes(token)) return res.sendStatus(403);
 
-  jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
+  if (!token || !isRefreshTokenValid(token)) {
+    return res.sendStatus(403);
+  }
 
-    const accessToken = generateAccessToken({
+  try {
+    const user = await verifyRefreshToken(token);
+
+    const newAccessToken = generateAccessToken({
       employee_id: user.employee_id,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -83,13 +80,18 @@ router.get("/refresh", (req, res) => {
       accountType: user.accountType,
       email: user.email,
     });
-    res.json({ accessToken });
-  });
+
+    res.json({ accessToken: newAccessToken });
+  } catch (err) {
+    console.error("Refresh token error:", err);
+    res.sendStatus(403);
+  }
 });
 
 // POST /api/auth/logout
 router.post("/logout", (req, res) => {
-  refreshTokens = refreshTokens.filter((t) => t !== req.cookies.refreshToken);
+  const token = req.cookies.refreshToken;
+  revokeRefreshToken(token);
   res.clearCookie("refreshToken");
   res.sendStatus(204);
 });
