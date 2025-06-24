@@ -4,7 +4,7 @@ import getCroppedImg from "../components/cropImage"; // Utility for cropping (de
 import Placeholder from "../img/placeholder.png";
 import { useAxiosWithAuth } from "../hooks/useAxiosWithAuth";
 
-function Account({ user }) {
+function UserModal({ visible, onClose, onSaved, account }) {
   const axios = useAxiosWithAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -21,21 +21,21 @@ function Account({ user }) {
   const [cropModal, setCropModal] = useState(false);
   const [tempImage, setTempImage] = useState(null);
 
-  const [imageDeleted, setImageDeleted] = useState(false);
+  const [deletedImage, setDeletedImage] = useState(false);
 
   const onCropComplete = useCallback((_, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
   useEffect(() => {
-    if (user) {
-      setFirstName(user.firstName || "");
-      setLastName(user.lastName || "");
-      setEmail(user.email || "");
-      setJobTitle(user.jobTitle || "");
-      setDepartment(user.department || "");
+    if (account) {
+      setFirstName(account.firstName || "");
+      setLastName(account.lastName || "");
+      setEmail(account.email || "");
+      setJobTitle(account.jobTitle || "");
+      setDepartment(account.department || "");
     }
-  }, [user]);
+  }, [account]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -43,7 +43,7 @@ function Account({ user }) {
       const imageUrl = URL.createObjectURL(file);
       setTempImage(imageUrl);
       setCropModal(true);
-      setImageDeleted(false); // reset deletion flag
+      setDeletedImage(false); // reset deletion flag
       e.target.value = null; // allow re-uploading same file
     }
   };
@@ -57,17 +57,11 @@ function Account({ user }) {
     setCropModal(false);
   };
 
-  const handleImageDelete = () => {
-    setImagePreview(null);
-    setProfileImage(null);
-    setImageDeleted(true);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("employee_id", user?.employee_id); // include employee_id
+    formData.append("employee_id", account?.employee_id);
     formData.append("first_name", firstName);
     formData.append("last_name", lastName);
     formData.append("email", email);
@@ -79,15 +73,15 @@ function Account({ user }) {
     }
 
     if (profileImage) {
-      formData.append("image", profileImage); // backend expects `image`
+      formData.append("image", profileImage);
     }
 
-    if (imageDeleted) {
-      formData.append("delete_image", "1"); // backend should check for this
+    if (deletedImage && !profileImage) {
+      formData.append("delete_image", "1");
     }
 
     try {
-      const res = await axios.post("/users/update-profile", formData, {
+      const res = await axios.put("/users/update-user", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       alert(res.data.message || "Profile updated successfully");
@@ -95,14 +89,30 @@ function Account({ user }) {
       if (res.data.accessToken) {
         localStorage.setItem("accessToken", res.data.accessToken);
       }
+
+      if (typeof onClose === "function") onClose();
+      if (typeof onSaved === "function") onSaved(); // <-- ✅ Refresh users
     } catch (err) {
       console.error("Upload error:", err);
       alert("Failed to update profile");
     }
   };
 
+  useEffect(() => {
+    if (!account) return;
+
+    setFirstName(account.first_name || "");
+    setLastName(account.last_name || "");
+    setEmail(account.email || "");
+    setJobTitle(account.job_title || "");
+    setDepartment(account.department || "");
+    setImagePreview(null);
+    setProfileImage(null);
+  }, [account]);
+
+  if (!visible || !account) return null;
   return (
-    <div className="bg-gray-100 flex items-center justify-center p-6">
+    <div className="fixed inset-0 bg-gray-100/70 flex items-center justify-center p-6">
       <div className="flex flex-col lg:flex-row w-full max-w-6xl bg-white shadow-2xl rounded-3xl overflow-hidden">
         <form
           className="flex w-full flex-col lg:flex-row"
@@ -115,19 +125,21 @@ function Account({ user }) {
               <label htmlFor="upload-image" className="cursor-pointer">
                 <img
                   src={
-                    imageDeleted
+                    deletedImage
                       ? Placeholder
                       : imagePreview
                       ? imagePreview
-                      : user?.profile_image
+                      : account?.profile_image
                       ? `${
                           import.meta.env.VITE_API_BASE_URL ||
                           "http://localhost:5000"
-                        }/uploads/${user.profile_image}`
+                        }/uploads/${account.profile_image}`
                       : Placeholder
                   }
                   alt={
-                    user ? `${user.firstName} ${user.lastName} Profile` : "User"
+                    account
+                      ? `${account.firstName} ${account.lastName} Profile`
+                      : "User"
                   }
                   className="w-40 h-40 rounded-full mx-auto mb-4 border-4 border-blue-300 hover:opacity-80 transition"
                   onError={(e) => {
@@ -135,9 +147,23 @@ function Account({ user }) {
                     e.currentTarget.src = Placeholder;
                   }}
                 />
+
                 <p className="text-sm text-gray-500">
                   Click to change profile image
                 </p>
+                {account?.profile_image && !imagePreview && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeletedImage(true);
+                      setImagePreview(null);
+                      setProfileImage(null);
+                    }}
+                    className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition"
+                  >
+                    Delete Image
+                  </button>
+                )}
               </label>
               <input
                 type="file"
@@ -180,20 +206,10 @@ function Account({ user }) {
                   </div>
                 </div>
               )}
-              {(imagePreview || user?.profile_image) && !imageDeleted && (
-                <button
-                  type="button"
-                  onClick={handleImageDelete}
-                  className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition"
-                >
-                  Delete Image
-                </button>
-              )}
-
               <p className="text-gray-700 font-semibold mt-2">
-                {user?.firstName} {user?.lastName}
+                {firstName} {lastName}
               </p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
+              <p className="text-sm text-gray-500">{account?.email}</p>
             </div>
           </div>
 
@@ -211,7 +227,7 @@ function Account({ user }) {
               <input
                 type="text"
                 readOnly
-                value={user?.employee_id || "Loading..."}
+                value={account?.employee_id || "Loading..."}
                 className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
               />
             </div>
@@ -298,12 +314,20 @@ function Account({ user }) {
             </div>
 
             {/* Save Button */}
-            <div className="text-center mt-8">
+            <div className="text-center mt-8 flex justify-end gap-4">
               <button
                 type="submit"
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
               >
                 Save
+              </button>
+
+              <button
+                onClick={onClose}
+                type="button"
+                className=" px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
+              >
+                Close
               </button>
             </div>
           </div>
@@ -313,4 +337,4 @@ function Account({ user }) {
   );
 }
 
-export default Account;
+export default UserModal;
