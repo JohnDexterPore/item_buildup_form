@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Cropper from "react-easy-crop";
-import getCroppedImg from "../components/cropImage"; // Utility for cropping (defined below)
+import getCroppedImg from "../hooks/cropImage"; // Utility for cropping (defined below)
 import Placeholder from "../img/placeholder.png";
 import { useAxiosWithAuth } from "../hooks/useAxiosWithAuth";
 

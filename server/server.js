@@ -5,6 +5,7 @@ const authRoutes = require("./routes/auth");
 const companiesRoutes = require("./routes/companies");
 const navigationRoutes = require("./routes/navigation");
 const usersRoutes = require("./routes/users");
+const dropdownRoutes = require("./routes/form");
 const fs = require("fs");
 const path = require("path");
 const uploadDir = path.join(__dirname, "uploads");
@@ -22,8 +23,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/companies", companiesRoutes);
 app.use("/api/navigation", navigationRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/form", dropdownRoutes);
 
 // Serve uploads folder as static
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(5000, () => console.log("Server running on port 5000"));
