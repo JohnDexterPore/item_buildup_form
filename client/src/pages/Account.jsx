@@ -1,41 +1,34 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Cropper from "react-easy-crop";
-import getCroppedImg from "../hooks/cropImage"; // Utility for cropping (defined below)
+import getCroppedImg from "../hooks/cropImage";
 import Placeholder from "../img/placeholder.png";
 import { useAxiosWithAuth } from "../hooks/useAxiosWithAuth";
+import InputField from "../components/InputField";
 
 function Account({ user }) {
   const axios = useAxiosWithAuth();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [department, setDepartment] = useState("");
-  const [password, setPassword] = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
-  const [profileImage, setProfileImage] = useState(null); // actual file
 
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    jobTitle: "",
+    department: "",
+    password: "",
+  });
+
+  const [imagePreview, setImagePreview] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [cropModal, setCropModal] = useState(false);
   const [tempImage, setTempImage] = useState(null);
-
   const [imageDeleted, setImageDeleted] = useState(false);
 
   const onCropComplete = useCallback((_, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      setFirstName(user.firstName || "");
-      setLastName(user.lastName || "");
-      setEmail(user.email || "");
-      setJobTitle(user.jobTitle || "");
-      setDepartment(user.department || "");
-    }
-  }, [user]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -43,17 +36,16 @@ function Account({ user }) {
       const imageUrl = URL.createObjectURL(file);
       setTempImage(imageUrl);
       setCropModal(true);
-      setImageDeleted(false); // reset deletion flag
-      e.target.value = null; // allow re-uploading same file
+      setImageDeleted(false);
+      e.target.value = null;
     }
   };
 
   const handleCropSave = async () => {
     const croppedFile = await getCroppedImg(tempImage, croppedAreaPixels);
     const previewUrl = URL.createObjectURL(croppedFile);
-
     setImagePreview(previewUrl);
-    setProfileImage(croppedFile); // ✅ this is now a File object
+    setProfileImage(croppedFile);
     setCropModal(false);
   };
 
@@ -62,36 +54,46 @@ function Account({ user }) {
     setProfileImage(null);
     setImageDeleted(true);
   };
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        jobTitle: user.jobTitle || "",
+        department: user.department || "",
+        password: "",
+      });
+    }
+  }, [user]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const formData = new FormData();
-    formData.append("employee_id", user?.employee_id); // include employee_id
-    formData.append("first_name", firstName);
-    formData.append("last_name", lastName);
-    formData.append("email", email);
-    formData.append("job_title", jobTitle);
-    formData.append("department", department);
-
-    if (password && password !== "******************") {
-      formData.append("password", password);
-    }
-
-    if (profileImage) {
-      formData.append("image", profileImage); // backend expects `image`
-    }
-
-    if (imageDeleted) {
-      formData.append("delete_image", "1"); // backend should check for this
-    }
+    const form = new FormData();
+    form.append("employee_id", user?.employee_id);
+    Object.entries(formData).forEach(([key, val]) => {
+      if (key === "password" && val !== "" && val !== "******************") {
+        form.append("password", val);
+      } else if (key !== "password") {
+        form.append(
+          key.replace(/[A-Z]/g, (match) => `_${match.toLowerCase()}`),
+          val
+        );
+      }
+    });
+    if (profileImage) form.append("image", profileImage);
+    if (imageDeleted) form.append("delete_image", "1");
 
     try {
-      const res = await axios.post("/users/update-profile", formData, {
+      const res = await axios.post("/users/update-profile", form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       alert(res.data.message || "Profile updated successfully");
-
       if (res.data.accessToken) {
         localStorage.setItem("accessToken", res.data.accessToken);
       }
@@ -101,6 +103,52 @@ function Account({ user }) {
     }
   };
 
+  const formSections = [
+    {
+      layout: "grid grid-cols-1 gap-6",
+      fields: [
+        {
+          label: "Employee ID",
+          name: "employeeId",
+          value: user?.employee_id || "Loading...",
+          type: "text",
+          disabled: true,
+          colSpan: "col-span-1",
+        },
+      ],
+    },
+    {
+      layout: "grid grid-cols-2 gap-6",
+      fields: [
+        { label: "First Name", name: "firstName", value: formData.firstName },
+        { label: "Last Name", name: "lastName", value: formData.lastName },
+      ],
+    },
+    {
+      layout: "grid grid-cols-1 gap-6",
+      fields: [{ label: "Email", name: "email", value: formData.email }],
+    },
+    {
+      layout: "grid grid-cols-1 gap-6",
+      fields: [
+        {
+          label: "Password",
+          name: "password",
+          value: formData.password,
+          type: "password",
+          note: "Leave blank to keep current password.",
+        },
+      ],
+    },
+    {
+      layout: "grid grid-cols-2 gap-6",
+      fields: [
+        { label: "Job Title", name: "jobTitle", value: formData.jobTitle },
+        { label: "Department", name: "department", value: formData.department },
+      ],
+    },
+  ];
+
   return (
     <div className="bg-gray-100 flex items-center justify-center p-6">
       <div className="flex flex-col lg:flex-row w-full max-w-6xl bg-white shadow-2xl rounded-3xl overflow-hidden">
@@ -109,7 +157,7 @@ function Account({ user }) {
           onSubmit={handleSubmit}
           encType="multipart/form-data"
         >
-          {/* Left Side - Profile image */}
+          {/* Left Section */}
           <div className="w-full lg:w-1/3 bg-blue-50 flex items-center justify-center p-10">
             <div className="text-center">
               <label htmlFor="upload-image" className="cursor-pointer">
@@ -131,7 +179,7 @@ function Account({ user }) {
                   }
                   className="w-40 h-40 rounded-full mx-auto mb-4 border-4 border-blue-300 hover:opacity-80 transition"
                   onError={(e) => {
-                    e.currentTarget.onerror = null; // Prevent infinite loop
+                    e.currentTarget.onerror = null;
                     e.currentTarget.src = Placeholder;
                   }}
                 />
@@ -146,7 +194,6 @@ function Account({ user }) {
                 onChange={handleImageChange}
                 className="hidden"
               />
-              {/* Crop Modal */}
               {cropModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
                   <div className="bg-white p-6 rounded-lg w-[90vw] max-w-xl">
@@ -155,7 +202,7 @@ function Account({ user }) {
                         image={tempImage}
                         crop={crop}
                         zoom={zoom}
-                        aspect={1} // square
+                        aspect={1}
                         onCropChange={setCrop}
                         onZoomChange={setZoom}
                         onCropComplete={onCropComplete}
@@ -189,7 +236,6 @@ function Account({ user }) {
                   Delete Image
                 </button>
               )}
-
               <p className="text-gray-700 font-semibold mt-2">
                 {user?.firstName} {user?.lastName}
               </p>
@@ -197,107 +243,39 @@ function Account({ user }) {
             </div>
           </div>
 
-          {/* Right Side - Form fields */}
+          {/* Right Section */}
           <div className="w-full lg:w-2/3 p-10">
             <h1 className="text-3xl font-bold text-gray-800 mb-6">
               Account Information
             </h1>
 
-            {/* Employee ID */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-600 uppercase">
-                Employee ID
-              </label>
-              <input
-                type="text"
-                readOnly
-                value={user?.employee_id || "Loading..."}
-                className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
-              />
+            <div className="space-y-6">
+              {formSections.map((section, idx) => (
+                <div key={idx} className={section.layout}>
+                  {section.fields.map((field) => (
+                    <div
+                      key={field.name}
+                      className={field.colSpan || "col-span-1"}
+                    >
+                      <InputField
+                        label={field.label}
+                        name={field.name}
+                        value={field.value}
+                        onChange={handleChange}
+                        type={field.type || "text"}
+                        disabled={field.disabled}
+                      />
+                      {field.note && (
+                        <p className="text-xs text-gray-500 italic mt-1">
+                          {field.note}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
 
-            {/* First and Last Name */}
-            <div className="flex flex-col md:flex-row gap-6 mt-6">
-              <div className="flex-1">
-                <label className="block text-sm font-semibold text-gray-600 uppercase">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-semibold text-gray-600 uppercase">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="mt-6">
-              <label className="block text-sm font-semibold text-gray-600 uppercase">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="mt-6">
-              <label className="block text-sm font-semibold text-gray-600 uppercase">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
-              />
-              <p className="text-xs text-gray-500 italic mt-1">
-                Password cannot be changed here.
-              </p>
-            </div>
-
-            {/* Job Title and Department */}
-            <div className="flex flex-col md:flex-row gap-6 mt-6">
-              <div className="flex-1">
-                <label className="block text-sm font-semibold text-gray-600 uppercase">
-                  Job Title
-                </label>
-                <input
-                  type="text"
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-semibold text-gray-600 uppercase">
-                  Department
-                </label>
-                <input
-                  type="text"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full mt-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
-                />
-              </div>
-            </div>
-
-            {/* Save Button */}
             <div className="text-center mt-8">
               <button
                 type="submit"

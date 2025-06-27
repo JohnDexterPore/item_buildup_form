@@ -10,6 +10,10 @@ import useDropdown from "../hooks/useDropdown";
 export default function Form() {
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const categoryOptions = useDropdown("Category");
+  const subcategoryOptions = useDropdown("Sub Category");
+  const coverageOptions = useDropdown("Coverage (Location)");
+  const priceTierOptions = useDropdown("Price Tier");
 
   const [formData, setFormData] = useState({
     parentItemDescription: "",
@@ -24,13 +28,15 @@ export default function Form() {
     subcategory: "",
     coverage: "",
     components: "",
-    transactionTypes: { dineIn: false, takeOut: false, delivery: false },
+    transactionTypes: {
+      dineIn: false,
+      takeOut: false,
+      delivery: false,
+      bulkOrder: false,
+      events: false,
+      corpTieUps: false,
+    },
   });
-
-  const categoryOptions = useDropdown("Category");
-  const subcategoryOptions = useDropdown("Sub Category");
-  const coverageOptions = useDropdown("Coverage (Location)");
-  const priceTierOptions = useDropdown("Price Tier");
 
   useEffect(() => {
     axios
@@ -64,6 +70,101 @@ export default function Form() {
     console.log("Submitted:", formData);
     // post to backend...
   };
+
+  const formSections = [
+    {
+      layout: "grid grid-cols-3 gap-4",
+      fields: [
+        {
+          type: "input",
+          label: "Parent Item Description",
+          name: "parentItemDescription",
+          colSpan: "col-span-3",
+        },
+      ],
+    },
+    {
+      layout: "grid grid-cols-3 gap-4",
+      fields: [
+        {
+          type: "input",
+          label: "POS Text",
+          name: "posTxt",
+          colSpan: "col-span-2",
+        },
+        {
+          type: "input",
+          label: "Date Prepared",
+          name: "datePrepared",
+          inputType: "date",
+          colSpan: "col-span-1",
+        },
+      ],
+    },
+    {
+      layout: "grid grid-cols-3 gap-4",
+      fields: [
+        {
+          type: "select",
+          label: "Price Tier",
+          name: "priceTier",
+          options: priceTierOptions,
+        },
+        {
+          type: "input",
+          label: "Gross Price",
+          name: "grossPrice",
+          isMoney: true,
+        },
+        {
+          type: "input",
+          label: "Delivery Price",
+          name: "deliveryPrice",
+          isMoney: true,
+        },
+      ],
+    },
+    {
+      layout: "grid grid-cols-3 gap-4",
+      fields: [
+        {
+          type: "select",
+          label: "Category",
+          name: "category",
+          options: categoryOptions,
+        },
+        {
+          type: "select",
+          label: "Sub Category",
+          name: "subcategory",
+          options: subcategoryOptions,
+        },
+        {
+          type: "select",
+          label: "Coverage",
+          name: "coverage",
+          options: coverageOptions,
+        },
+      ],
+    },
+    {
+      layout: "grid grid-cols-2 gap-4",
+      fields: [
+        {
+          type: "input",
+          label: "Start Date",
+          name: "startDate",
+          inputType: "date",
+        },
+        {
+          type: "input",
+          label: "End Date",
+          name: "endDate",
+          inputType: "date",
+        },
+      ],
+    },
+  ];
 
   return (
     <div className="bg-gray-100 flex justify-center h-full p-6">
@@ -106,95 +207,44 @@ export default function Form() {
             <h1 className="text-3xl font-bold text-gray-800 mb-6">
               Item Build-Up Form
             </h1>
+
             <div className="space-y-6 h-full overflow-y-auto pr-2 py-5">
-              <InputField
-                label="Parent Item Description"
-                name="parentItemDescription"
-                value={formData.parentItemDescription}
-                onChange={handleChange}
-              />
+              {formSections.map((section, idx) => (
+                <div key={idx} className={section.layout}>
+                  {section.fields.map((field) => {
+                    const commonProps = {
+                      key: field.name,
+                      label: field.label,
+                      name: field.name,
+                      value: formData[field.name],
+                      onChange: field.isMoney ? handleMoney : handleChange,
+                      className: field.colSpan || "",
+                    };
 
-              <div className="grid grid-cols-3 gap-4">
-                <InputField
-                  label="POS Text"
-                  name="posTxt"
-                  value={formData.posTxt}
-                  onChange={handleChange}
-                  className="col-span-2"
-                />
-                <InputField
-                  label="Date Prepared"
-                  name="datePrepared"
-                  value={formData.datePrepared}
-                  onChange={handleChange}
-                  type="date"
-                  className="col-span-1"
-                />
-              </div>
+                    if (field.type === "input") {
+                      return (
+                        <InputField
+                          {...commonProps}
+                          type={field.inputType || "text"}
+                        />
+                      );
+                    }
 
-              <div className="grid grid-cols-3 gap-4">
-                <SelectField
-                  label="Price Tier"
-                  name="priceTier"
-                  value={formData.priceTier}
-                  onChange={handleChange}
-                  options={priceTierOptions}
-                />
-                <InputField
-                  label="Gross Price"
-                  name="grossPrice"
-                  value={formData.grossPrice}
-                  onChange={handleMoney}
-                />
-                <InputField
-                  label="Delivery Price"
-                  name="deliveryPrice"
-                  value={formData.deliveryPrice}
-                  onChange={handleMoney}
-                />
-              </div>
+                    if (field.type === "select") {
+                      return (
+                        <SelectField
+                          {...commonProps}
+                          options={field.options || []}
+                        />
+                      );
+                    }
 
-              <div className="grid grid-cols-3 gap-4">
-                <SelectField
-                  label="Category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  options={categoryOptions}
-                />
-                <SelectField
-                  label="Sub Category"
-                  name="subcategory"
-                  value={formData.subcategory}
-                  onChange={handleChange}
-                  options={subcategoryOptions}
-                />
-                <SelectField
-                  label="Coverage"
-                  name="coverage"
-                  value={formData.coverage}
-                  onChange={handleChange}
-                  options={coverageOptions}
-                />
-              </div>
+                    return null;
+                  })}
+                </div>
+              ))}
 
-              <div className="grid grid-cols-2 gap-4">
-                <InputField
-                  label="Start Date"
-                  name="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={handleChange}
-                />
-                <InputField
-                  label="End Date"
-                  name="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={handleChange}
-                />
-              </div>
-
+              {/** Textarea */}
               <TextAreaField
                 label="Components"
                 name="components"
@@ -202,6 +252,7 @@ export default function Form() {
                 onChange={handleChange}
               />
 
+              {/** Checkbox Group */}
               <CheckboxGroup
                 label="Transaction Types"
                 options={[
