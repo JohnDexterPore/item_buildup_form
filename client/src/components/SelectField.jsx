@@ -1,6 +1,13 @@
 import React from 'react'
 
-function SelectField({ label, name, value, onChange, options }) {
+function SelectField({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  required = false,
+}) {
   return (
     <div className="flex-1">
       <label className="block text-sm font-semibold text-gray-600 uppercase mb-1">
@@ -10,6 +17,7 @@ function SelectField({ label, name, value, onChange, options }) {
         name={name}
         value={value}
         onChange={onChange}
+        required={required}
         className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg"
       >
         <option value="">{`Select ${label}`}</option>

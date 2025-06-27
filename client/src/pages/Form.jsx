@@ -65,11 +65,32 @@ export default function Form() {
     setFormData((prev) => ({ ...prev, [name]: value.replace(/[^0-9.]/g, "") }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitted:", formData);
-    // post to backend...
+
+    // Validate at least one transaction type is selected
+    const hasTransactionType = Object.values(formData.transactionTypes).some(
+      Boolean
+    );
+
+    if (!hasTransactionType) {
+      alert("Please select at least one transaction type.");
+      return;
+    }
+
+    try {
+      const response = await axios.post("/items/create", {
+        ...formData,
+        companyCode: selectedCompany?.company_code || "",
+      });
+
+      alert(response.data.message || "Item created successfully!");
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("Failed to submit item. Please try again.");
+    }
   };
+  
 
   const formSections = [
     {
@@ -80,6 +101,7 @@ export default function Form() {
           label: "Parent Item Description",
           name: "parentItemDescription",
           colSpan: "col-span-3",
+          required: true,
         },
       ],
     },
@@ -91,6 +113,7 @@ export default function Form() {
           label: "POS Text",
           name: "posTxt",
           colSpan: "col-span-2",
+          required: true,
         },
         {
           type: "input",
@@ -98,6 +121,7 @@ export default function Form() {
           name: "datePrepared",
           inputType: "date",
           colSpan: "col-span-1",
+          required: true,
         },
       ],
     },
@@ -109,18 +133,21 @@ export default function Form() {
           label: "Price Tier",
           name: "priceTier",
           options: priceTierOptions,
+          required: true,
         },
         {
           type: "input",
           label: "Gross Price",
           name: "grossPrice",
           isMoney: true,
+          required: true,
         },
         {
           type: "input",
           label: "Delivery Price",
           name: "deliveryPrice",
           isMoney: true,
+          required: true,
         },
       ],
     },
@@ -132,18 +159,21 @@ export default function Form() {
           label: "Category",
           name: "category",
           options: categoryOptions,
+          required: true,
         },
         {
           type: "select",
           label: "Sub Category",
           name: "subcategory",
           options: subcategoryOptions,
+          required: true,
         },
         {
           type: "select",
           label: "Coverage",
           name: "coverage",
           options: coverageOptions,
+          required: true,
         },
       ],
     },
@@ -155,12 +185,14 @@ export default function Form() {
           label: "Start Date",
           name: "startDate",
           inputType: "date",
+          required: true,
         },
         {
           type: "input",
           label: "End Date",
           name: "endDate",
           inputType: "date",
+          required: true,
         },
       ],
     },
@@ -226,6 +258,7 @@ export default function Form() {
                         <InputField
                           {...commonProps}
                           type={field.inputType || "text"}
+                          required={field.required}
                         />
                       );
                     }
@@ -235,6 +268,7 @@ export default function Form() {
                         <SelectField
                           {...commonProps}
                           options={field.options || []}
+                          required={field.required}
                         />
                       );
                     }
@@ -250,6 +284,7 @@ export default function Form() {
                 name="components"
                 value={formData.components}
                 onChange={handleChange}
+                required={true}
               />
 
               {/** Checkbox Group */}

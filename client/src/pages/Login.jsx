@@ -63,7 +63,7 @@ function Login() {
               ))}
             </div>
             <h2 className="mt-10 text-center text-xl font-bold tracking-tight text-gray-900">
-              Item Build Up Form
+              Item Build-Up Form
             </h2>
           </div>
 
