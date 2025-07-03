@@ -6,6 +6,7 @@ const companiesRoutes = require("./routes/companies");
 const navigationRoutes = require("./routes/navigation");
 const usersRoutes = require("./routes/users");
 const dropdownRoutes = require("./routes/form");
+const itemRoutes = require("./routes/items");
 const fs = require("fs");
 const path = require("path");
 const uploadDir = path.join(__dirname, "uploads");
@@ -24,6 +25,7 @@ app.use("/api/companies", companiesRoutes);
 app.use("/api/navigation", navigationRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/form", dropdownRoutes);
+app.use("/api/items", itemRoutes);
 
 // Serve uploads folder as static
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

@@ -8,6 +8,7 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Inbox from "../pages/Inbox";
 import Form from "../pages/Form";
+import Ongoing from "../pages/Ongoing";
 import Account from "../pages/Account";
 import Users from "../pages/Users";
 
@@ -105,7 +106,8 @@ function AppRoutes() {
         <div className="p-6 bg-gray-100 flex-1 overflow-y-auto">
           <Routes>
             <Route path="/inbox" element={<Inbox />} />
-            <Route path="/form" element={<Form />} />
+            <Route path="/form" element={<Form user={user} />} />
+            <Route path="/ongoing" element={<Ongoing />} />
             <Route path="/account" element={<Account user={user} />} />
             <Route path="/users" element={<Users />} />
             {/* Add more routes here */}

@@ -1,6 +1,6 @@
 import React from "react";
 
-function TextAreaField({ label, name, value, onChange, required = false }) {
+function TextAreaField({ label, name, value, onChange, required = false, className }) {
   return (
     <div>
       <label className="block text-sm font-semibold text-gray-600 uppercase mb-1">

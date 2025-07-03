@@ -12,7 +12,7 @@ import Placeholder from "../img/placeholder.png";
 import Prompt from "../components/Prompt";
 import UserModal from "../components/UserModal";
 
-function Users() {
+function Ongoing() {
   const axios = useAxiosWithAuth();
   const [users, setUsers] = useState([]);
   const [fetchUsers, setFetchUsers] = useState([]);
@@ -106,7 +106,6 @@ function Users() {
     setSelectedUser(null);
     setUserModalVisible(false);
   };
-
   return (
     <>
       <div className="bg-gray-100 flex items-center justify-center p-5">
@@ -156,16 +155,10 @@ function Users() {
                     className="hover:bg-gray-100 transition normal-case border-b border-gray-300 rounded-2xl"
                   >
                     <td className="p-3  space-x-2 transition transistion-duration-300">
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        className="hover:text-white text-xl hover:underline hover:bg-blue-500 p-2 rounded-xl"
-                      >
+                      <button className="hover:text-white text-xl hover:underline hover:bg-blue-500 p-2 rounded-xl">
                         <LuPencilLine />
                       </button>
-                      <button
-                        onClick={() => handleDeleteUser(user.employee_id)}
-                        className="hover:text-white text-xl hover:underline hover:bg-red-600 p-2 rounded-xl"
-                      >
+                      <button className="hover:text-white text-xl hover:underline hover:bg-red-600 p-2 rounded-xl">
                         <LuTrash2 />
                       </button>
                     </td>
@@ -306,4 +299,4 @@ function Users() {
   );
 }
 
-export default Users;
+export default Ongoing;
