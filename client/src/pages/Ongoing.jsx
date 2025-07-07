@@ -40,9 +40,17 @@ function Ongoing() {
   }, []);
 
   const filteredItems = items.filter((item) => {
+    const formattedDate = item.date_prepared
+      ? new Date(item.date_prepared).toLocaleDateString("en-US")
+      : "";
+
     return (
-      item.parent_item_description.includes(searchTerm) ||
-      item.brand?.includes(searchTerm)
+      item.reference_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.parent_item_description
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      item.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      formattedDate.includes(searchTerm)
     );
   });
 
@@ -91,6 +99,9 @@ function Ongoing() {
                     Actions
                   </th>
                   <th className="p-4 text-left text-sm font-semibold">
+                    Reference No.
+                  </th>
+                  <th className="p-4 text-left text-sm font-semibold">
                     Item Description
                   </th>
                   <th className="p-4 text-left text-sm font-semibold">Brand</th>
@@ -121,6 +132,9 @@ function Ongoing() {
                       >
                         <LuTrash2 className="text-xl" />
                       </button>
+                    </td>
+                    <td className="p-4 font-medium">
+                      {item.reference_no || "N/A"}
                     </td>
                     <td className="p-4 font-medium">
                       {item.parent_item_description}

@@ -34,7 +34,21 @@ router.post("/create-item", authenticateToken, async (req, res) => {
 
     const request = new sql.Request(transaction);
 
-    // Convert checked checkboxes into a comma-separated string
+    // Step 1: Count existing items with same companyCode + userId
+    const refPrefix = `${companyCode}-${userId}-`; // no dashes
+    const countQuery = `
+      SELECT COUNT(*) AS itemCount
+      FROM tbl_items
+      WHERE reference_no LIKE @refPrefix + '%'
+    `;
+    const countResult = await request
+      .input("refPrefix", sql.VarChar, refPrefix)
+      .query(countQuery);
+
+    const latestCount = (countResult.recordset[0]?.itemCount || 0) + 1;
+    const newReferenceNo = `${companyCode}-${userId}-${latestCount}`;
+
+    // Step 2: Format transaction types
     const txTypesString = Object.entries(transactionTypes)
       .filter(([_, checked]) => checked)
       .map(([key]) =>
@@ -44,23 +58,23 @@ router.post("/create-item", authenticateToken, async (req, res) => {
 
     const summaryJson = JSON.stringify(summary);
 
-    // Insert query
+    // Step 3: Prepare insert query
     const insertParentQuery = `
       INSERT INTO tbl_items (
-        brand, parent_item_description, pos_txt, date_prepared,
+        reference_no, brand, parent_item_description, pos_txt, date_prepared,
         start_date, end_date, price_tier, gross_price, delivery_price,
         category, subcategory, coverage, components, transaction_types,
         summary_data, created_date, created_by, state
       )
-      OUTPUT INSERTED.item_id
       VALUES (
-        @companyCode, @parentItemDescription, @posTxt, @datePrepared,
+        @reference_no, @companyCode, @parentItemDescription, @posTxt, @datePrepared,
         @startDate, @endDate, @priceTier, @grossPrice, @deliveryPrice,
         @category, @subcategory, @coverage, @components, @transactionType,
         @summary, CURRENT_TIMESTAMP, @createdBy, @state
       )
     `;
 
+    request.input("reference_no", sql.VarChar, newReferenceNo);
     request.input("companyCode", sql.VarChar, companyCode);
     request.input("parentItemDescription", sql.VarChar, parentItemDescription);
     request.input("posTxt", sql.VarChar, posTxt);
@@ -76,18 +90,22 @@ router.post("/create-item", authenticateToken, async (req, res) => {
     request.input("components", sql.VarChar, components);
     request.input("transactionType", sql.VarChar, txTypesString);
     request.input("summary", sql.NVarChar(sql.MAX), summaryJson);
-    request.input("createdBy", sql.VarChar, userId); // ✅ created by userId
-    request.input("state", sql.VarChar, "Ongoing"); // ✅ state = "Ongoing"
+    request.input("createdBy", sql.VarChar, userId);
+    request.input("state", sql.VarChar, "Ongoing");
 
     await request.query(insertParentQuery);
-
     await transaction.commit();
-    res.json({ message: "Item created successfully!" });
+
+    res.json({
+      message: "Item created successfully!",
+      reference_no: newReferenceNo,
+    });
   } catch (err) {
     console.error("Error saving item:", err);
     res.status(500).json({ message: "Failed to save item." });
   }
 });
+
 
 router.get("/get-items", authenticateToken, async (req, res) => {
   const { state } = req.query; // Use query for GET params
