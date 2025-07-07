@@ -89,4 +89,26 @@ router.post("/create-item", authenticateToken, async (req, res) => {
   }
 });
 
+router.get("/get-items", authenticateToken, async (req, res) => {
+  const { state } = req.query; // Use query for GET params
+
+  try {
+    const pool = await sql.connect(sqlConfig);
+    const request = pool.request();
+
+    let query = "SELECT * FROM tbl_items";
+
+    // Add condition only if status is provided
+    if (state) {
+      query += " WHERE state = @state";
+      request.input("state", sql.VarChar, state);
+    }
+    query += " ORDER BY created_date DESC";
+    const result = await request.query(query);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error("Error fetching items:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 module.exports = router;

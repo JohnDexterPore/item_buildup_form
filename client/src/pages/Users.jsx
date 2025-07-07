@@ -14,7 +14,6 @@ import UserModal from "../components/UserModal";
 
 function Users() {
   const axios = useAxiosWithAuth();
-  const [users, setUsers] = useState([]);
   const [fetchUsers, setFetchUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,7 +30,6 @@ function Users() {
   const fetchUsersData = async () => {
     try {
       const res = await axios.get("/users/get-users");
-      setUsers(res.data);
       setFetchUsers(res.data);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -153,7 +151,7 @@ function Users() {
                 {currentUsers.map((user, index) => (
                   <tr
                     key={user.employee_id || index}
-                    className="hover:bg-gray-100 transition normal-case border-b border-gray-300 rounded-2xl"
+                    className="hover:bg-gray-100 transition normal-case border-b border-gray-200 rounded-2xl"
                   >
                     <td className="p-3  space-x-2 transition transistion-duration-300">
                       <button

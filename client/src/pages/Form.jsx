@@ -27,14 +27,6 @@ function formatMoney(value) {
   }
 }
 
-// New function to format price for display in inputs or text
-function formatPriceForDisplay(value) {
-  if (value === "" || value === null || value === undefined) return "₱";
-  // If value is already formatted (starts with ₱), return as is
-  if (typeof value === "string" && value.startsWith("₱")) return value;
-  return formatMoney(value);
-}
-
 function parseMoneyInput(value) {
   return value.replace(/[^\d.]/g, "").replace(/(\.\d{2})\d+/, "$1");
 }
@@ -46,6 +38,9 @@ export default function Form({ user }) {
   const subcategoryOptions = useDropdown("Sub Category");
   const coverageOptions = useDropdown("Coverage (Location)");
   const priceTierOptions = useDropdown("Price Tier");
+
+  const [ItemModalVisible, setItemModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const [rows, setRows] = useState([
     {
@@ -159,7 +154,7 @@ export default function Form({ user }) {
           className="flex w-full flex-col lg:flex-row h-full"
         >
           {/* Company Side */}
-          <aside className="w-full lg:w-1/4 bg-blue-50 p-10 flex flex-col justify-center items-center">
+          <aside className="w-full lg:w-1/5 bg-blue-50 p-10 flex flex-col justify-center items-center">
             <img
               src={
                 selectedCompany?.logo_address
@@ -188,7 +183,7 @@ export default function Form({ user }) {
           </aside>
 
           {/* Form Side */}
-          <main className="w-full lg:w-3/4 p-10 flex flex-col justify-between">
+          <main className="w-full lg:w-4/5 p-10 flex flex-col justify-between">
             <h1 className="text-3xl font-bold text-gray-800 mb-6">
               Item Build-Up Form
             </h1>
