@@ -167,8 +167,8 @@ function ItemModal({ visible, onClose, item, onSaved }) {
   if (!visible || !item) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-100/70 flex items-center justify-center p-6 z-50">
-      <div className="flex flex-col lg:flex-row w-full h-full max-w-7xl bg-white shadow-2xl rounded-3xl overflow-hidden">
+    <div className="fixed inset-0 bg-gray-100/70 flex items-center justify-center py-6 z-50 px-20">
+      <div className="flex flex-col lg:flex-row w-full h-full max-w-8xl bg-white shadow-2xl rounded-3xl overflow-hidden">
         <form
           onSubmit={handleSubmit}
           className="flex w-full flex-col lg:flex-row h-full"
