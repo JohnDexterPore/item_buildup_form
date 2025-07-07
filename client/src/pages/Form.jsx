@@ -39,9 +39,6 @@ export default function Form({ user }) {
   const coverageOptions = useDropdown("Coverage (Location)");
   const priceTierOptions = useDropdown("Price Tier");
 
-  const [ItemModalVisible, setItemModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-
   const [rows, setRows] = useState([
     {
       id: 1,
@@ -94,11 +91,6 @@ export default function Form({ user }) {
           }
         : { ...prev, [name]: value.toUpperCase() }
     );
-  };
-
-  const handleMoney = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: parseMoneyInput(value) }));
   };
 
   const handleSubmit = async (e) => {

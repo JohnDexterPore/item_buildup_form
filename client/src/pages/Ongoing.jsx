@@ -9,6 +9,7 @@ import {
   MdKeyboardDoubleArrowRight,
   MdDescription,
 } from "react-icons/md";
+import ItemModal from "../components/ItemModal";
 import Prompt from "../components/Prompt";
 
 function Ongoing() {
@@ -17,6 +18,10 @@ function Ongoing() {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [items, setItems] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [ItemModalVisible, setItemModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+
   const itemsPerPage = 7;
 
   const fetchItemsData = async () => {
@@ -40,6 +45,16 @@ function Ongoing() {
       item.brand?.includes(searchTerm)
     );
   });
+
+  const handleEditItem = (item) => {
+    setSelectedItem(item);
+    setItemModalVisible(true);
+  };
+
+  const handleCloseItemModal = () => {
+    setSelectedItem(null);
+    setItemModalVisible(false);
+  };
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -92,6 +107,7 @@ function Ongoing() {
                   >
                     <td className="p-4 flex items-center gap-2">
                       <button
+                        onClick={() => handleEditItem(item)}
                         className="hover:bg-blue-100 p-2 rounded-full transition duration-200"
                         title="Edit"
                         aria-label="Edit item"
@@ -176,6 +192,12 @@ function Ongoing() {
           </div>
         </div>
       </div>
+      <ItemModal
+        visible={ItemModalVisible}
+        onClose={handleCloseItemModal}
+        item={selectedItem}
+        onSaved={fetchItemsData} // <-- NEW
+      />
     </>
   );
 }
