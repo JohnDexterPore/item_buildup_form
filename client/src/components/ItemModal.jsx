@@ -99,8 +99,8 @@ function ItemModal({ visible, onClose, item, onSaved }) {
       startDate: formatDate(item.start_date),
       endDate: formatDate(item.end_date),
       priceTier: item.price_tier || "",
-      grossPrice: formatMoney(item.gross_price), // 👈 apply formatMoney here
-      deliveryPrice: formatMoney(item.delivery_price), // 👈 and here
+      grossPrice: formatMoney(item.gross_price),
+      deliveryPrice: formatMoney(item.delivery_price),
       category: item.category || "",
       subcategory: item.subcategory || "",
       coverage: item.coverage || "",
