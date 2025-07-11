@@ -17,17 +17,25 @@ function formatMoney(value) {
   if (!value) return "";
   const num = parseFloat(value);
   if (isNaN(num)) return "";
+  // Format with commas and up to 2 decimal places, but do not force trailing zeros
   const parts = num.toString().split(".");
-  if (parts.length === 1) return `₱${num.toLocaleString()}`;
-  return `₱${num.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })}`;
+  if (parts.length === 1) {
+    // integer, no decimals
+    return `₱${num.toLocaleString()}`;
+  } else {
+    // has decimals, limit to 2 decimal places without trailing zeros
+    return `₱${num.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}`;
+  }
 }
 
 function parseMoneyInput(value) {
+  if (typeof value !== "string") value = value?.toString() || "";
   return value.replace(/[^\d.]/g, "").replace(/(\.\d{2})\d+/, "$1");
 }
+
 
 function ItemModal({ visible, onClose, item, onSaved }) {
   const axios = useAxiosWithAuth();
@@ -91,8 +99,8 @@ function ItemModal({ visible, onClose, item, onSaved }) {
       startDate: formatDate(item.start_date),
       endDate: formatDate(item.end_date),
       priceTier: item.price_tier || "",
-      grossPrice: item.gross_price?.toString() || "",
-      deliveryPrice: item.delivery_price?.toString() || "",
+      grossPrice: formatMoney(item.gross_price), // 👈 apply formatMoney here
+      deliveryPrice: formatMoney(item.delivery_price), // 👈 and here
       category: item.category || "",
       subcategory: item.subcategory || "",
       coverage: item.coverage || "",
@@ -106,7 +114,6 @@ function ItemModal({ visible, onClose, item, onSaved }) {
         corpTieUps: item.transaction_types?.includes("Corp Tie-ups") || false,
       },
     }));
-    
 
     if (item.summary_data) {
       try {
@@ -117,7 +124,6 @@ function ItemModal({ visible, onClose, item, onSaved }) {
       }
     }
   }, [item]);
-  
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -147,20 +153,36 @@ function ItemModal({ visible, onClose, item, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const res = await axios.put("/items/update-item", {
-        ...formData,
-        rows,
-        companyCode: selectedCompany?.company_code,
-      });
 
-      alert(res.data.message || "Item updated successfully");
+    const hasTx = Object.values(formData.transactionTypes).some(Boolean);
+    if (!hasTx) return alert("Please select at least one transaction type.");
+
+    // Clean and convert money fields in rows
+    const cleanRows = rows.map((row) => ({
+      ...row,
+      mmPrice: parseFloat(parseMoneyInput(row.mmPrice)) || 0,
+      provPrice: parseFloat(parseMoneyInput(row.provPrice)) || 0,
+    }));
+
+    try {
+      const payload = {
+        ...formData,
+        userId: item?.user_id || "", // or however you track the editor
+        companyCode: selectedCompany?.company_code || "",
+        grossPrice: parseFloat(parseMoneyInput(formData.grossPrice)) || 0,
+        deliveryPrice: parseFloat(parseMoneyInput(formData.deliveryPrice)) || 0,
+        summary: cleanRows,
+      };
+
+      console.log("Submitting payload:", payload); // debug only
+      const res = await axios.put("/items/update-item", payload);
+      alert(res.data.message || "Item updated successfully!");
 
       if (typeof onClose === "function") onClose();
       if (typeof onSaved === "function") onSaved();
     } catch (err) {
-      console.error("Upload error:", err);
-      alert("Failed to update item");
+      console.error(err);
+      alert("Failed to update item.");
     }
   };
 
@@ -200,6 +222,20 @@ function ItemModal({ visible, onClose, item, onSaved }) {
                 </option>
               ))}
             </select>
+            <div className="text-center mt-8 flex justify-center gap-4 w-full">
+              <button
+                type="button"
+                className="w-1/2 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
+              >
+                Disapprove
+              </button>
+              <button
+                type="button"
+                className="w-1/2 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
+              >
+                Approve
+              </button>
+            </div>
           </aside>
 
           {/* Main Form */}
@@ -247,37 +283,58 @@ function ItemModal({ visible, onClose, item, onSaved }) {
                 <InputField
                   label="Gross Price"
                   name="grossPrice"
-                  value={formData.grossPrice}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      grossPrice: parseMoneyInput(e.target.value),
-                    }))
-                  }
-                  onBlur={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      grossPrice: formatMoney(prev.grossPrice),
-                    }))
-                  }
+                  value={formData.grossPrice ? `${formData.grossPrice}` : ""}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    // Remove currency prefix and commas for parsing
+                    val = val.replace(/₱/g, "").replace(/,/g, "");
+                    // Allow only digits and decimal point, max 2 decimals
+                    if (/^\d*\.?\d{0,2}$/.test(val)) {
+                      // Format with commas while typing
+                      const parts = val.split(".");
+                      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                      const formattedVal = parts.join(".");
+                      setFormData((prev) => ({
+                        ...prev,
+                        grossPrice: formattedVal,
+                      }));
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Format on blur with currency prefix and commas
+                    const rawVal = formData.grossPrice.replace(/,/g, "");
+                    const formatted = formatMoney(rawVal);
+                    setFormData((prev) => ({ ...prev, grossPrice: formatted }));
+                  }}
                   required
                 />
                 <InputField
                   label="Delivery Price"
                   name="deliveryPrice"
-                  value={formData.deliveryPrice}
-                  onChange={(e) =>
+                  value={
+                    formData.deliveryPrice ? `${formData.deliveryPrice}` : ""
+                  }
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    val = val.replace(/₱/g, "").replace(/,/g, "");
+                    if (/^\d*\.?\d{0,2}$/.test(val)) {
+                      const parts = val.split(".");
+                      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                      const formattedVal = parts.join(".");
+                      setFormData((prev) => ({
+                        ...prev,
+                        deliveryPrice: formattedVal,
+                      }));
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const rawVal = formData.deliveryPrice.replace(/,/g, "");
+                    const formatted = formatMoney(rawVal);
                     setFormData((prev) => ({
                       ...prev,
-                      deliveryPrice: parseMoneyInput(e.target.value),
-                    }))
-                  }
-                  onBlur={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      deliveryPrice: formatMoney(prev.deliveryPrice),
-                    }))
-                  }
+                      deliveryPrice: formatted,
+                    }));
+                  }}
                   required
                 />
               </div>
